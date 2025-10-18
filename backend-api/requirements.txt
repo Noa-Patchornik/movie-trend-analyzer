@@ -1,0 +1,8 @@
+# requirements.txt: Dependencies for FastAPI
+fastapi
+uvicorn[standard]
+pydantic[email]
+# Database connector and ORM
+psycopg2-binary # Python adapter for Postgres
+SQLAlchemy
+alembic

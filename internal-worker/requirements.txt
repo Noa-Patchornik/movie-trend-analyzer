@@ -1,0 +1,4 @@
+# requirements.txt: Dependencies for Internal Worker
+pika # For connecting to RabbitMQ
+psycopg2-binary
+SQLAlchemy
