@@ -1,22 +1,29 @@
-version: '3.8'
-
 services:
+  # 1. PostgreSQL Database Service
   postgres_db:
     image: postgres:14-alpine
     restart: always
     env_file:
       - .env
-    environment: 
+    environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
+      # Persists data to the local machine volume
       - postgres_data:/var/lib/postgresql/data/
+    # Expose port 5432 to the host machine for external tools (like DBeaver)
     ports:
-      - "5432:5432" 
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # 2. RabbitMQ Message Broker Service
   rabbitmq_mq:
-    image: rabbitmq:3-management-alpine 
+    image: rabbitmq:3-management-alpine # Includes the management interface on port 15672
     restart: always
     env_file:
       - .env
@@ -24,61 +31,75 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
     ports:
-      - "5672:5672" # פורט לחיבור Workers
-      - "15672:15672" # פורט לממשק הניהול (http://localhost:15672)
+      - "5672:5672"   # Standard MQ port for Workers and API
+      - "15672:15672" # Management interface (http://localhost:15672)
 
+  # 3. FastAPI Backend API Service (The Gateway)
   fastapi_api:
-    build:
-      context: ./backend-api 
-      dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - .env
-    environment:
-      DB_HOST: ${DB_HOST}
-      MQ_HOST: ${MQ_HOST}
-    ports:
-      - "${FASTAPI_PORT}:8000" 
-    depends_on:
-      - postgres_db # ודא ש-DB פועל לפני ש-API מנסה להתחבר
-      - rabbitmq_mq
+      build:
+        context: ./backend-api
+        dockerfile: Dockerfile
+      restart: always
+      env_file:
+        - .env
+      environment:
+        DB_HOST: postgres_db
+        MQ_HOST: rabbitmq_mq
+        TMDB_API_KEY: ${TMDB_API_KEY}
+      ports:
+        - "${FASTAPI_PORT}:8000"
+      depends_on:
+        postgres_db:
+          condition: service_healthy
+        rabbitmq_mq:
+          condition: service_started
 
+
+  # 4. Internal Worker Service (Updates view counts)
   internal_worker:
+    # Context is set to the project root ('.') to allow COPYing files across folders
     build:
-      context: ./internal-worker
-      dockerfile: Dockerfile
+      context: . 
+      dockerfile: internal-worker/Dockerfile
     restart: always
     env_file:
       - .env
-    environment:
-      DB_HOST: ${DB_HOST}
-      MQ_HOST: ${MQ_HOST}
+    environment: # Same connection variables as the API
+      DB_HOST: postgres_db
+      MQ_HOST: rabbitmq_mq
     depends_on:
       - postgres_db
       - rabbitmq_mq
 
+  # 5. External Worker Service (Fetches TMDB score and calculates final trend)
   external_worker:
+    # Context is set to the project root ('.')
     build:
-      context: ./external-worker
-      dockerfile: Dockerfile
+      context: . 
+      dockerfile: external-worker/Dockerfile
     restart: always
     env_file:
       - .env
-    environment:
-      DB_HOST: ${DB_HOST}
-      MQ_HOST: ${MQ_HOST}
-      TMDB_API_KEY: ${TMDB_API_KEY} 
+    environment: # TMDB_API_KEY is needed here for the requests library
+      DB_HOST: postgres_db
+      MQ_HOST: rabbitmq_mq
+      TMDB_API_KEY: ${TMDB_API_KEY}
     depends_on:
       - postgres_db
       - rabbitmq_mq
-
+      
+  # 6. Frontend UI Service (NGINX/Vite for display)
   frontend_ui:
+    # Context is set to the project root ('.') to build the full app
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     restart: always
+    # Map port 3000 on the host to port 80 inside the NGINX container
     ports:
-      - "3000:3000" 
+      - "3000:80" 
+    depends_on:
+      - fastapi_api # Ensure API is up before serving the frontend
 
 volumes:
-  postgres_data: 
+  postgres_data:

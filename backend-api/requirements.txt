@@ -6,3 +6,4 @@ pydantic[email]
 psycopg2-binary # Python adapter for Postgres
 SQLAlchemy
 alembic
+pika

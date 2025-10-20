@@ -1,7 +1,11 @@
 # movie-trend-analyzer/external-worker/worker_app/external_scorer.py
 
-import pika
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+import pika
 import json
 import time
 import requests  # Used for making HTTP calls to TMDB

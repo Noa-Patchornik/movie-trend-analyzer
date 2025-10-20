@@ -1,7 +1,7 @@
 # movie-trend-analyzer/backend-api/app/db/models.py
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, func, UniqueConstraint
-from database import Base
+from .database import Base
 
 
 # Define the ORM model for our movies/shows table

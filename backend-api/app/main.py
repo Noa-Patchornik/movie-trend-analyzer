@@ -2,10 +2,10 @@
 
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from db.database import engine, Base, get_db
-from db import models
+from .db.database import engine, Base, get_db
+from .db import models
 from . import messaging
-from api import movies
+from .api import movies
 
 # Create all tables defined in models.py in the database
 models.Base.metadata.create_all(bind=engine)

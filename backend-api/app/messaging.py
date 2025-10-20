@@ -2,6 +2,15 @@
 import pika
 import os
 import json
+from datetime import datetime
+
+DELIVERY_MODE_PERSISTENT_VALUE = 2
+
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, datetime):
+        return obj.isoformat() # Convert datetime object to ISO 8601 string
+    raise TypeError ("Type %s not serializable" % type(obj))
 
 # Load RabbitMQ connection details from environment variables
 MQ_HOST = os.getenv("MQ_HOST", "rabbitmq_mq")
@@ -37,9 +46,9 @@ def send_message(queue_name: str, message: dict):
         channel.basic_publish(
             exchange='',
             routing_key=queue_name,
-            body=json.dumps(message),
+            body=json.dumps(message, default=json_serial),
             properties=pika.BasicProperties(
-                delivery_mode=pika.spec.DELIVERY_MODE_PERSISTENT
+                delivery_mode= DELIVERY_MODE_PERSISTENT_VALUE
             )
         )
         print(f" [x] Sent message to {queue_name}: {message}")

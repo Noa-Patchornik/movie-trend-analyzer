@@ -1,12 +1,16 @@
 # movie-trend-analyzer/internal-worker/worker_app/internal_processor.py
 
-import pika
 import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+
+import pika
 import json
 import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from db.models import MovieShow # This will resolve correctly inside the Docker container
+from db.models import MovieShow
 from db.database import SQLALCHEMY_DATABASE_URL # Import DB URL configuratio
 
 # --- 1. Database Setup ---
@@ -130,4 +134,5 @@ if __name__ == '__main__':
     # For now, we assume a linked project structure or copying of DB files.
     from sqlalchemy import func
 
+    print("Worker started and waiting for messages...")
     start_consuming()
