@@ -23,6 +23,3 @@ app.include_router(movies.router, prefix="/api/movies", tags=["movies"])
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "API is running"}
-
-# TODO: Add Pydantic Schemas (not implemented in this step)
-# TODO: Implement initial movie registration endpoint (R1.5)
