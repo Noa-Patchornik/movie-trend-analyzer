@@ -96,6 +96,8 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     restart: always
+    # environment:
+    #   - VITE_API_BASE_URL=http://fastapi_api:8000/api/movies=value
     # Map port 3000 on the host to port 80 inside the NGINX container
     ports:
       - "3000:80" 

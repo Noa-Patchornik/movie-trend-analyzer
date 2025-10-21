@@ -1,7 +1,7 @@
 # movie-trend-analyzer/backend-api/app/main.py
 import sys
 sys.stdout.reconfigure(line_buffering=True)
-
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from .db.database import engine, Base, get_db
@@ -17,6 +17,15 @@ app = FastAPI(
     description="API for registering views and triggering external score updates.",
     version="1.0.0",
 )
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # או ["*"] לפיתוח
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)             # Allows all headers
 
 # Include the router for movie-related endpoints
 app.include_router(movies.router, prefix="/api/movies", tags=["movies"])

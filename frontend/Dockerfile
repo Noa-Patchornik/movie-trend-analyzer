@@ -20,7 +20,7 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy a custom Nginx configuration to handle React routing (optional, but good practice)
-# COPY nginx.conf /etc/nginx/conf.d/default.conf 
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80 
 # Note: In docker-compose.yml we map 3000:80
