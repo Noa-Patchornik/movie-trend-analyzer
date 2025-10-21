@@ -31,7 +31,7 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3/movie/"
 
 
 # --- 2. External API Logic ---
-def fetch_tmdb_data(tmdb_id: int):
+def fetch_tmdb_data(db_session, tmdb_id: int):
     """Fetches movie title and vote average from TMDB."""
     if not TMDB_API_KEY:
         print("CRITICAL: TMDB_API_KEY is missing!")
@@ -42,6 +42,18 @@ def fetch_tmdb_data(tmdb_id: int):
 
     try:
         response = requests.get(url, timeout=10)  # Set a timeout for external calls
+
+        if response.status_code == 404:
+            print(f"WARNING: TMDB ID {tmdb_id} not found (404). Attempting to delete from local DB.")
+
+            # Find and delete the placeholder record
+            movie_to_delete = db_session.query(MovieShow).filter(MovieShow.tmdb_id == tmdb_id).first()
+            if movie_to_delete:
+                db_session.delete(movie_to_delete)
+                db_session.commit()
+                print(f"SUCCESS: Placeholder movie for ID {tmdb_id} deleted from DB.")
+            return None  # Stop processing
+
         response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
         data = response.json()
 
@@ -54,6 +66,10 @@ def fetch_tmdb_data(tmdb_id: int):
             }
         else:
             print(f"ERROR: TMDB response missing title or vote_average for ID {tmdb_id}.")
+            movie_to_delete = db_session.query(MovieShow).filter(MovieShow.tmdb_id == tmdb_id).first()
+            if movie_to_delete:
+                db_session.delete(movie_to_delete)
+                db_session.commit()
             return None
 
     except requests.exceptions.RequestException as e:
@@ -67,7 +83,7 @@ def update_external_score_and_calculate_trend(db_session, tmdb_id: int):
     Fetches external data, calculates the final trend score, and updates the DB.
     """
     # 1. Fetch TMDB data
-    tmdb_data = fetch_tmdb_data(tmdb_id)
+    tmdb_data = fetch_tmdb_data(db_session,tmdb_id)
     if not tmdb_data:
         # If external data fetch failed, we stop here and acknowledge the message.
         return
