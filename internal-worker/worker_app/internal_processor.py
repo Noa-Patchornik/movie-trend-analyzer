@@ -2,7 +2,7 @@
 
 import os
 import sys
-
+sys.stdout.reconfigure(line_buffering=True)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 import pika
@@ -89,7 +89,7 @@ def start_consuming():
     """
     Establishes connection to RabbitMQ and starts listening for messages.
     """
-    print("INFO: Internal Worker starting...")
+    print("INFO: Internal Worker starting...", flush = True)
 
     # Use a loop to retry connection in case MQ is not ready yet
     for attempt in range(10):
@@ -108,7 +108,7 @@ def start_consuming():
             # Make sure the queue exists before consuming from it
             channel.queue_declare(queue=QUEUE_NAME, durable=True)
 
-            print(f' [*] Waiting for messages on {QUEUE_NAME}. To exit press CTRL+C')
+            print(f' [*] Waiting for messages on {QUEUE_NAME}. To exit press CTRL+C', flush= True)
 
             # Set up the consumer
             channel.basic_consume(
@@ -117,14 +117,18 @@ def start_consuming():
                 auto_ack=False
             )
 
-            channel.start_consuming()
+            try:
+                channel.start_consuming()
+            except Exception as e:
+                print(f"[!] Worker crashed with error: {e}", flush=True)
+
             break
 
         except pika.exceptions.AMQPConnectionError:
-            print(f"WARNING: RabbitMQ not ready. Retrying in 5 seconds (Attempt {attempt + 1}/10)...")
+            print(f"WARNING: RabbitMQ not ready. Retrying in 5 seconds (Attempt {attempt + 1}/10)...", flush=True)
             time.sleep(5)
         except Exception as e:
-            print(f"CRITICAL ERROR in Internal Worker: {e}")
+            print(f"CRITICAL ERROR in Internal Worker: {e}", flush=True)
             break
 
 
@@ -134,5 +138,6 @@ if __name__ == '__main__':
     # For now, we assume a linked project structure or copying of DB files.
     from sqlalchemy import func
 
-    print("Worker started and waiting for messages...")
+    print("Worker started and waiting for messages...", flush = True)
+
     start_consuming()

@@ -2,7 +2,7 @@
 
 import os
 import sys
-
+sys.stdout.reconfigure(line_buffering=True)
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 import pika
@@ -134,7 +134,7 @@ def start_consuming():
     Establishes connection to RabbitMQ, starts listening for messages,
     and implements a retry mechanism.
     """
-    print("INFO: Worker starting...")
+    print("INFO: Worker starting...", flush = True)
 
     # Connection parameters from environment
     credentials = pika.PlainCredentials(MQ_USER, MQ_PASS)
@@ -156,7 +156,7 @@ def start_consuming():
             # Declare the queue (creates it if it doesn't exist)
             channel.queue_declare(queue=QUEUE_NAME, durable=True)
 
-            print(f' [*] Waiting for messages on {QUEUE_NAME}. To exit press CTRL+C')
+            print(f' [*] Waiting for messages on {QUEUE_NAME}. To exit press CTRL+C', flush = True)
 
             # Start consuming messages
             channel.basic_consume(
@@ -165,24 +165,27 @@ def start_consuming():
                 auto_ack=False
             )
 
-            channel.start_consuming()
+            try:
+                channel.start_consuming()
+            except Exception as e:
+                print(f"[!] Worker crashed with error: {e}", flush=True)
 
             break
 
         except pika.exceptions.AMQPConnectionError:
             if attempt < MAX_RETRIES - 1:
-                print(f"WARNING: RabbitMQ not ready. Retrying in 5 seconds (Attempt {attempt + 1}/{MAX_RETRIES})...")
+                print(f"WARNING: RabbitMQ not ready. Retrying in 5 seconds (Attempt {attempt + 1}/{MAX_RETRIES})...", flush = True)
                 time.sleep(5)
             else:
-                print("CRITICAL: Failed to connect to RabbitMQ after multiple retries. Exiting.")
+                print("CRITICAL: Failed to connect to RabbitMQ after multiple retries. Exiting.", flush = True)
                 raise  # Raise the exception if retries failed
 
         except KeyboardInterrupt:
-            print(" [*] Worker shutting down...")
+            print(" [*] Worker shutting down...", flush = True)
             break
 
         except Exception as e:
-            print(f"CRITICAL ERROR in Worker: {e}")
+            print(f"CRITICAL ERROR in Worker: {e}", flush = True)
             break
 
 

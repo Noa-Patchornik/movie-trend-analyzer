@@ -61,7 +61,7 @@ services:
     build:
       context: . 
       dockerfile: internal-worker/Dockerfile
-    restart: always
+    restart: "no"
     env_file:
       - .env
     environment: # Same connection variables as the API
@@ -71,13 +71,14 @@ services:
       - postgres_db
       - rabbitmq_mq
 
+
   # 5. External Worker Service (Fetches TMDB score and calculates final trend)
   external_worker:
     # Context is set to the project root ('.')
     build:
       context: . 
       dockerfile: external-worker/Dockerfile
-    restart: always
+    restart: "no"
     env_file:
       - .env
     environment: # TMDB_API_KEY is needed here for the requests library

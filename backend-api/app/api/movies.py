@@ -1,4 +1,6 @@
-# movie-trend-analyzer/backend-api/app/api/movies.py
+
+import sys
+sys.stdout.reconfigure(line_buffering=True)
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
